@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 
 # --- CONFIGURATION ---
@@ -14,14 +16,8 @@ DOMAIN_FILTER = "sites.google.com/iit.ac.lk/launchpilot-ai"
 def get_stealth_driver():
     chrome_options = Options()
     
-    # --- FIX: USE YOUR REAL CHROME PROFILE ---
-    # This allows the bot to stay logged in as YOU instead of a 'Guest'
-    user_home = os.path.expanduser("~")
-    profile_path = os.path.join(user_home, "AppData", "Local", "Google", "Chrome", "User Data")
-    
-    chrome_options.add_argument(f"--user-data-dir={profile_path}")
-    chrome_options.add_argument("--profile-directory=Profile 1") # Change to 'Profile 1' if you use a secondary profile
-    
+    chrome_options.add_argument("--start-maximized")
+
     # Stealth: Hide automation flags
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
@@ -39,14 +35,16 @@ def get_stealth_driver():
 def scroll_and_click(driver):
     print("  📜 Scrolling and looking for buttons...")
     
-    # Human-like Scroll
-    total_height = driver.execute_script("return document.body.scrollHeight")
-    current_pos = 0
-    while current_pos < total_height:
-        step = random.randint(400, 700)
-        current_pos += step
-        driver.execute_script(f"window.scrollTo(0, {current_pos});")
-        time.sleep(random.uniform(0.5, 1.0))
+    # Scroll using keyboard PAGE_DOWN — works inside iframes/Google Sites
+    body = driver.find_element(By.TAG_NAME, "body")
+    body.click()
+    actions = ActionChains(driver)
+    scroll_steps = random.randint(8, 14)
+    print(f"    scrolling top -> bottom ({scroll_steps} steps)")
+    for i in range(scroll_steps):
+        actions.send_keys(Keys.PAGE_DOWN).perform()
+        print(f"    step {i+1}/{scroll_steps}")
+        time.sleep(random.uniform(1, 3))
     
     # Find clickable elements
     buttons = driver.find_elements(By.CSS_SELECTOR, "button, [role='button'], input[type='button']")
@@ -91,6 +89,11 @@ def run_automation():
                 time.sleep(5) 
 
             scroll_and_click(driver)
+
+            # Stay on page for a while before moving on
+            stay_time = random.uniform(10, 20)
+            print(f"  ⏱ Staying on page for {stay_time:.0f} seconds...")
+            time.sleep(stay_time)
 
             # Extract internal links
             links = driver.find_elements(By.TAG_NAME, "a")

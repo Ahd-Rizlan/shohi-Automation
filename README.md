@@ -63,4 +63,4 @@ python -m venv .venv
 
 ### 1. RUN
 
-.\.venv\Scripts\python.exe app.py
+.\.venv\python.exe app.py
